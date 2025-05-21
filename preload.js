@@ -5,8 +5,14 @@ contextBridge.exposeInMainWorld('saveUserLoginData', (data) => {
     ipcRenderer.send('save-user-login-data', data);
 });
 
+// 获取系统打印机
 contextBridge.exposeInMainWorld('checkSystemPrinter', (data) => {
     ipcRenderer.send('check-system-printer', data);
+});
+
+// 打印测试页
+contextBridge.exposeInMainWorld('printTestPage', (data) => {
+    ipcRenderer.send('print-test-page', data);
 });
 
 // 在你的渲染进程代码中
@@ -21,5 +27,3 @@ ipcRenderer.on('update-download-progress', (event, percent) => {
     // 在这里更新你的 UI，例如更新一个进度条
     // document.getElementById('download-progress-bar').style.width = percent + '%';
 });
-
-// ... 监听其他你发送的频道 ...

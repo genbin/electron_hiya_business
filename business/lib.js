@@ -1,11 +1,11 @@
-const {BrowserWindow, ipcMain, app, } = require('electron');
+const {BrowserWindow, ipcMain, app,} = require('electron');
 const path = require('path');
 const fs = require('fs');
-const {getMessage, printReceipt, savePrinters, getCurrentLocation} = require("./api");
+const {getMessage, printReceipt, savePrinters, getCurrentLocation, printTestPage} = require("./api");
 const {config, shop, getConfig, writeFile} = require("./global");
 const {screen} = require("electron");
 const electron = require("electron");
-const { autoUpdater } = require('electron-updater');
+const {autoUpdater} = require('electron-updater');
 const log = require('electron-log'); // 可选，用于日志记录
 
 // 配置 autoUpdater 日志
@@ -43,7 +43,8 @@ function createMainWindow() {
         }
     });
 
-    win.webContents.session.clearCache().then(() => {
+
+    if (config['hasCache']) {
         let serverUrl = config['serverAddress'];
         if (config['isTest']) {
             serverUrl = config['testAddress'];
@@ -54,10 +55,23 @@ function createMainWindow() {
         }).catch((err) => {
             console.log(err);
         });
-    });
+    } else {
+        win.webContents.session.clearCache().then(() => {
+            let serverUrl = config['serverAddress'];
+            if (config['isTest']) {
+                serverUrl = config['testAddress'];
+            }
+            win.loadURL(serverUrl).then(r => {
+                _debug();
 
+            }).catch((err) => {
+                console.log(err);
+            });
+        });
+    }
 
-    win.on('show', () => {})
+    win.on('show', () => {
+    })
 
     win.on('close', (e) => {
         const choice = electron.dialog.showMessageBoxSync(win, {
@@ -66,7 +80,7 @@ function createMainWindow() {
             message: '确认退出',
             buttons: ['最小化运行', '立即退出'],
             defaultId: 0,
-            cancelId:0
+            cancelId: 0
         });
         if (choice === 0) {
             e.preventDefault();
@@ -79,7 +93,8 @@ function createMainWindow() {
     });
 
     // 应用准备好后，检查更新
-    autoUpdater.checkForUpdatesAndNotify().then(r => {});
+    autoUpdater.checkForUpdatesAndNotify().then(r => {
+    });
 
     // 自动更新事件监听
     autoUpdater.on('checking-for-update', () => {
@@ -163,6 +178,7 @@ function createMainWindow() {
         }
     });
 
+    // 处理来自浏览器内部的调用，获取系统打印机
     ipcMain.on('check-system-printer', (event, data) => {
         console.log('check system printer ..... getSystemPrinter and saveTo server');
         if (data != null && data.trim().length > 0) {
@@ -170,6 +186,12 @@ function createMainWindow() {
             if (shop && shop['ownerId']) {
                 _getSystemPrinters(shop['ownerId']);
             }
+        }
+    });
+
+    ipcMain.on('print-test-page', (event, printName) => {
+        if (printName != null && printName.trim().length > 0) {
+            printTestPage(printName);
         }
     });
 }
@@ -181,7 +203,7 @@ function _debug() {
 }
 
 function _delayAndExecute(callback) {
-    setTimeout(callback, 20*1000);
+    setTimeout(callback, 20 * 1000);
 }
 
 function _getSystemPrinters(shopCode) {
