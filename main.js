@@ -1,8 +1,7 @@
 const {app, BrowserWindow} = require('electron');
 const {createMainWindow} = require('./business/lib');
-const electron = require("electron");
 
-// Handle app ready event
+app.commandLine.appendSwitch('lang', 'en-US');
 app.whenReady().then(() => {
     createMainWindow();
 });

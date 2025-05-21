@@ -5,6 +5,10 @@ contextBridge.exposeInMainWorld('saveUserLoginData', (data) => {
     ipcRenderer.send('save-user-login-data', data);
 });
 
+contextBridge.exposeInMainWorld('checkSystemPrinter', (data) => {
+    ipcRenderer.send('check-system-printer', data);
+});
+
 // 在你的渲染进程代码中
 ipcRenderer.on('update-message', (event, message) => {
     console.log('收到更新消息:', message);

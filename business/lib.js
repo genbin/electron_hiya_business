@@ -39,7 +39,6 @@ function createMainWindow() {
             nativeWindowOpen: true, //是否使用原生的window.open()
             // webviewTag: true, //是否启用 <webview> tag标签
             sandbox: true,
-            lang: 'en',
             preload: path.join(__dirname, '../preload.js')
         }
     });
@@ -134,25 +133,43 @@ function createMainWindow() {
 
     // 处理来自浏览器内部的调用，保存shopCode，并开启打印
     let messageIntervalId = null;
+    let checkPrinterIntervalId = null;
     ipcMain.on('save-user-login-data', (event, data) => {
         if (data != null && data.trim().length > 0) {
             shop['ownerId'] = data;
-            /// 获取打印机，并写入数据库
-            _getSystemPrinters(data);
-
             /// 清除之前可能存在的interval, 防止多个interval同时运行
             if (messageIntervalId != null) {
                 clearInterval(messageIntervalId);
             }
+            if (checkPrinterIntervalId != null) {
+                clearInterval(checkPrinterIntervalId);
+            }
 
-            /// 延迟开启打印小票
+            /// 每10分钟，获取打印机，并写入数据库
+            checkPrinterIntervalId = setInterval(function () {
+                if (shop && shop['ownerId']) {
+                    _getSystemPrinters(shop['ownerId']);
+                }
+            }, 10 * 60 * 1000);
+
+            /// 延迟20秒，开启打印小票
             _delayAndExecute(() => {
                 messageIntervalId = setInterval(function () {
                     if (shop && shop['ownerId']) {
-                        getMessage(data);
+                        getMessage(shop['ownerId']);
                     }
                 }, 1000);
             });
+        }
+    });
+
+    ipcMain.on('check-system-printer', (event, data) => {
+        console.log('check system printer ..... getSystemPrinter and saveTo server');
+        if (data != null && data.trim().length > 0) {
+            shop['ownerId'] = data;
+            if (shop && shop['ownerId']) {
+                _getSystemPrinters(shop['ownerId']);
+            }
         }
     });
 }
@@ -178,21 +195,7 @@ function _getSystemPrinters(shopCode) {
         } catch (err) {
             console.error('Error saving printers to JSON:', err);
         }
-        _debug();
     });
 }
-
-/// 数据写入剪贴板
-// function _writeClipBoard(data) {
-//     require('electron').clipboard.writeText(data);
-// }
-
-// function _readClipBoard(data) {
-//     return require('electron').clipboard.readText('clipboard');
-// }
-
-// function isLogin() {
-//     return shop != null && shop['ownerId'] != null;
-// }
 
 module.exports = {createMainWindow};
