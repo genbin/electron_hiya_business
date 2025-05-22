@@ -11,8 +11,8 @@ contextBridge.exposeInMainWorld('checkSystemPrinter', (data) => {
 });
 
 // 打印测试页
-contextBridge.exposeInMainWorld('printTestPage', (data) => {
-    ipcRenderer.send('print-test-page', data);
+contextBridge.exposeInMainWorld('printTestPage', (data, width) => {
+    ipcRenderer.send('print-test-page', data, width);
 });
 
 // 在你的渲染进程代码中

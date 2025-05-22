@@ -25,8 +25,7 @@ function getMessage(shopCode) {
         .then(data => {
             if (data.code === 0 && data.data != null) {
                 for (let i = 0; i < data.data.length; i++) {
-                    // console.info('print receipt %o', data.data);
-                    _printItWithData(data.data[i]['printerName'], data.data[i]['printContent']);
+                    _printItWithData(data.data[i]['printerName'], data.data[i]['printWidth'], data.data[i]['printContent']);
                 }
             }
             return data;
@@ -63,18 +62,68 @@ function savePrinters(shopCode, strPrinters) {
     }
 }
 
+function parsePageSizeString(pageSizeStr) {
+    if (typeof pageSizeStr !== 'string') {
+        console.error("Invalid input: pageSizeStr must be a string.");
+        return null; // Or throw an error
+    }
+
+    // If the string does not contain '*', return the original string
+    if (!pageSizeStr.includes('*')) {
+        return pageSizeStr;
+    }
+
+    // Proceed with parsing if '*' is present
+    const parts = pageSizeStr.split('*');
+    if (parts.length !== 2) {
+        console.error("Invalid pageSizeStr format for parsing. Expected two dimensions separated by '*'.");
+        return null; // Or return the original string if that's preferred for this specific error
+    }
+
+    const widthStr = parts[0].toLowerCase().replace('mm', '').trim();
+    const heightStr = parts[1].toLowerCase().replace('mm', '').trim();
+
+    const width = parseInt(widthStr, 10);
+    const height = parseInt(heightStr, 10);
+
+    if (isNaN(width) || isNaN(height)) {
+        console.error("Could not parse width or height from string parts.");
+        return null; // Or return the original string
+    }
+
+    // Assuming the conversion from mm to the desired unit involves multiplying by 10
+    return {
+        "width": width * 10,
+        "height": height * 10
+    };
+}
+
 // 打印机，打印小票
 // 打印机配置options，放到方法体中。打印过程改成同步方法。放置频繁更换打印机出现的参数混乱。
-async function printReceipt(printName, printData) {
+async function printReceipt(printName, pageWidth = '78mm', printData) {
+    var receiptWidth = parsePageSizeString(pageWidth);
+    console.log(`>>> printName %s, pageWidth: %s, receiptWidth: %s`, printName, pageWidth, receiptWidth);
     var options = {
-        preview: false,               //  width of content body
+        preview: false,
         silent: true,
-        copies: 1,                    // Number of copies to print
-        printerName: '',        // printerName: string, check with webContent.getPrinters()
-        openCashDrawer: true, // Open the cash drawer after printing
-        drawerNumber: 1, // Specify drawer number, default is 1
-        timeOutPerLine: 1000,
-        pageSize: '80mm'  // page size
+        margin: 'auto',
+        timeOutPerLine: 0,
+        copies: 1,
+        printerName: '',
+        openCashDrawer: true,
+        drawerNumber: 1,
+        margins: {
+            top: 0,
+            bottom: 0,
+            right: 10,
+            left: 10
+        },
+        dpi: {
+            vertical: 15,
+            horizontal: 15
+        },
+        pageSize: receiptWidth  // page size
+        // pageSize: {"width": 400, "height": 300}  // page size
     }
     options['printerName'] = printName;
     await PosPrinter.print(JSON.parse(printData), options).then(() => {
@@ -138,22 +187,47 @@ function getCurrentLocation(callback) {
     req.end();
 }
 
-function _printItWithData(printerName = '', printContent) {
+function _printItWithData(printerName = '', pageWidth = '78mm', printContent) {
     if (printContent !== null && printContent.trim() !== ''
         && printerName !== null && printerName.trim() !== '') {
-        printReceipt(printerName, printContent);
+        printReceipt(printerName, pageWidth, printContent);
     }
 }
 
-function printTestPage(printerName = '') {
+function getFormattedCurrentDateTime() {
+    const now = new Date();
+
+    const year = now.getFullYear();
+    const month = (now.getMonth() + 1).toString().padStart(2, '0'); // Months are 0-indexed
+    const day = now.getDate().toString().padStart(2, '0');
+
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const seconds = now.getSeconds().toString().padStart(2, '0');
+
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
+function printTestPage(printerName = '', pageWidth = '78mm') {
+    const formattedDateTime = getFormattedCurrentDateTime();
     var printContent = `[
-        {"type":"text","value":"${printerName}","style":{ "fontWeight": "500", "textAlign": "center", "fontSize": "24px" }},
-        {"type":"text","value":"Test status: Passed","style":{ "fontWeight": "700", "textAlign": "left", "fontSize": "24px" }},
-        {"type":"text","value":"<br>","style":{}},{"type":"text","value":"2025-05-21 14:39:09","style":{"textAlign":"center"}},
+        {"type":"text","value":"${printerName}", "style":{"fontSize": "20px", "padding-left": "5px", "padding-right": "5px","font-family": "微软雅黑"}},
+        {"type":"text","value":"Test status: Passed", "style":{"fontSize": "20px", "padding-left": "5px", "padding-right": "5px","font-family": "微软雅黑"} },
+        {"type":"text","value":"<br>", "style":{}}, 
+        {"type":"text","value":"${formattedDateTime}", "style":{ "textAlign": "left", "padding-left": "5px", "padding-right": "5px","font-family": "微软雅黑"} },
         { "type": "text", "value": "<br>", "style": {} }
     ]`;
+    if (pageWidth.split('*')[0].replace('mm', '').trim() <= 50) {
+        printContent = `[
+        {"type":"text","value":"${printerName}", "style":{"fotnSize": "10px", "textAlign": "left", "padding-left": "1px", "padding-right": "5px","font-family": "微软雅黑"}},
+        {"type":"text","value":"Test status: Passed", "style":{"fotnSize": "10px", "textAlign": "left", "padding-left": "1px", "padding-right": "5px","font-family": "微软雅黑"} },
+        {"type":"text","value":"<br>", "style":{}}, 
+        {"type":"text","value":"${formattedDateTime}", "style":{ "textAlign": "left", "padding-left": "5px", "padding-right": "5px","font-family": "微软雅黑"} },
+        { "type": "text", "value": "<br>", "style": {} }
+    ]`;
+    }
     if (printerName !== null && printerName.trim() !== '') {
-        printReceipt(printerName, printContent);
+        printReceipt(printerName, pageWidth, printContent);
     }
 }
 

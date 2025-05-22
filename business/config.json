@@ -1,15 +1,15 @@
 {
   "isTest": true,
   "isDebug": true,
-  "hasCache": true,
+  "hasCache": false,
   "minWidth": 1440,
   "minHeight": 900,
   "serverAddress": "http://60.205.204.131:9082/",
-  "testAddress": "http://localhost:55278",
+  "testAddress": "http://localhost:63911",
   "serverApiHost": "60.205.204.131:8080",
   "appTitle": "Restaurant System",
   "defaultPrinterName": "EPSON",
-  "ver": "1.2.4",
+  "ver": "1.2.6",
   "deviceId": "40b11543-1eb0-4067-8882-1004ba105904",
   "googleMapsApiKey": "AIzaSyBybCFOIQmNMF1hM4gA53VD9efivM2epoY"
 }

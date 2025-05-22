@@ -1,6 +1,6 @@
 {
   "name": "electron_hiya_business",
-  "productName": "Hiya_Setup_win10_64bit",
+  "productName": "HiyaClient",
   "description": "Hiya Business",
   "keywords": [],
   "main": "./main.js",
@@ -21,7 +21,7 @@
   },
   "build": {
     "appId": "com.hiya-business.win10",
-    "productName": "Hiya_Setup_win10_64bit",
+    "productName": "HiyaClient",
     "copyright": "Copyright © 2024 ${author}",
     "asar": true,
     "directories": {

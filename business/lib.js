@@ -189,9 +189,9 @@ function createMainWindow() {
         }
     });
 
-    ipcMain.on('print-test-page', (event, printName) => {
+    ipcMain.on('print-test-page', (event, printName, pageWidth) => {
         if (printName != null && printName.trim().length > 0) {
-            printTestPage(printName);
+            printTestPage(printName, pageWidth);
         }
     });
 }
