@@ -13,10 +13,11 @@ var deviceId;
 function getConfig() {
     const CONFIG_FILE_PATH = join(__dirname, 'config.json');
     config = JSON.parse(readFileSync(CONFIG_FILE_PATH));
-    getExistedDeviceUuid();
+    getExistedDeviceUuid(config);
+    return config;
 }
 
-function getExistedDeviceUuid() {
+function getExistedDeviceUuid(config) {
    if (config['deviceId'] === undefined ) {
       config['deviceId'] = genUuid();
       writeFile('config.json', JSON.stringify(config));

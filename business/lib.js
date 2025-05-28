@@ -35,8 +35,8 @@ function createMainWindow() {
             contextIsolation: true, // 启用隔离
             devTools: true,
             webSecurity: false, //禁用同源策略
-            // plugins: true, //是否支持插件
-            nativeWindowOpen: true, //是否使用原生的window.open()
+            plugins: false, //是否支持插件
+            nativeWindowOpen: false, //是否使用原生的window.open()
             // webviewTag: true, //是否启用 <webview> tag标签
             sandbox: true,
             preload: path.join(__dirname, '../preload.js')
@@ -163,7 +163,7 @@ function createMainWindow() {
             /// 每10分钟，获取打印机，并写入数据库
             checkPrinterIntervalId = setInterval(function () {
                 if (shop && shop['ownerId']) {
-                    _getSystemPrinters(shop['ownerId']);
+                    getSystemPrinters(shop['ownerId']);
                 }
             }, 10 * 60 * 1000);
 
@@ -178,13 +178,51 @@ function createMainWindow() {
         }
     });
 
+    const versionToNumber = (vString) => {
+        if (typeof vString !== 'string' || !vString) {
+            return 0; // Or handle as an error, or return a very small number
+        }
+        const parts = vString.split('.');
+        const major = (parts[0] || '0').padStart(2, '0');
+        const minor = (parts[1] || '0').padStart(2, '0');
+        const patch = (parts[2] || '0').padStart(2, '0');
+        return parseInt(`${major}${minor}${patch}`, 10);
+    };
+
+    /// 处理保存系统参数的事件
+    ipcMain.on('save-system-data', (event, version) => {
+        const currentConfig = getConfig();
+        if (version && typeof version === 'string') { // Ensure version is a valid string
+            const newVersionNumber = versionToNumber(version);
+            var currentVersionNumber = versionToNumber(currentConfig['ver']);
+
+            if (win) {
+                win.setTitle(`${config['appTitle']} ${version}`);
+            }
+
+            log.info(`new version VS current version: ${newVersionNumber} VS ${currentVersionNumber}`);
+            if (newVersionNumber > currentVersionNumber) {
+                log.info(`Updated config.json with version: ${version}`);
+                currentConfig['ver'] = version; // Update the version string
+                writeFile('config.json', JSON.stringify(currentConfig)); // Save the updated config
+                config['ver'] = version; // Update in-memory config
+                log.info('Reloading window, ignoring cache...');
+                win.webContents.reloadIgnoringCache();
+                log.info(`Incoming version ${version} is not newer than current config version ${currentConfig['version']}. No update.`);
+            }
+
+        } else {
+            log.warn(`Invalid or missing version received: ${version}`);
+        }
+    });
+    //
     // 处理来自浏览器内部的调用，获取系统打印机
     ipcMain.on('check-system-printer', (event, data) => {
         console.log('check system printer ..... getSystemPrinter and saveTo server');
         if (data != null && data.trim().length > 0) {
             shop['ownerId'] = data;
             if (shop && shop['ownerId']) {
-                _getSystemPrinters(shop['ownerId']);
+                getSystemPrinters(shop['ownerId']);
             }
         }
     });
@@ -206,7 +244,7 @@ function _delayAndExecute(callback) {
     setTimeout(callback, 20 * 1000);
 }
 
-function _getSystemPrinters(shopCode) {
+function getSystemPrinters(shopCode) {
     /// 获取系统中的打印机，并写入文件printers.json, 写入剪贴板
     win.webContents.getPrintersAsync().then(printers => {
         try {

@@ -25,7 +25,7 @@ function getMessage(shopCode) {
         .then(data => {
             if (data.code === 0 && data.data != null) {
                 for (let i = 0; i < data.data.length; i++) {
-                    _printItWithData(data.data[i]['printerName'], data.data[i]['printWidth'], data.data[i]['printContent']);
+                    sendToPrinterWithData(data.data[i]['printerName'], data.data[i]['printWidth'], data.data[i]['printContent']);
                 }
             }
             return data;
@@ -104,7 +104,8 @@ async function printReceipt(printName, pageWidth = '78mm', printData) {
     var receiptWidth = parsePageSizeString(pageWidth);
     console.log(`>>> printName %s, pageWidth: %s, receiptWidth: %s`, printName, pageWidth, receiptWidth);
     var options = {
-        preview: false,
+        preview: config['printPreview'] ?? false,
+        // preview: false,
         silent: true,
         margin: 'auto',
         timeOutPerLine: 0,
@@ -187,13 +188,16 @@ function getCurrentLocation(callback) {
     req.end();
 }
 
-function _printItWithData(printerName = '', pageWidth = '78mm', printContent) {
+function sendToPrinterWithData(printerName = '', pageWidth = '78mm', printContent) {
     if (printContent !== null && printContent.trim() !== ''
         && printerName !== null && printerName.trim() !== '') {
-        printReceipt(printerName, pageWidth, printContent);
+        printReceipt(printerName, pageWidth, printContent).then((value) => {
+            console.log('>>> %s is printed OK');
+        });
     }
 }
 
+/// 获得当前日期时间
 function getFormattedCurrentDateTime() {
     const now = new Date();
 
@@ -208,8 +212,10 @@ function getFormattedCurrentDateTime() {
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
+/// 测试小票
 function printTestPage(printerName = '', pageWidth = '78mm') {
     const formattedDateTime = getFormattedCurrentDateTime();
+    /// 打印78mm的测试小票
     var printContent = `[
         {"type":"text","value":"${printerName}", "style":{"fontSize": "20px", "padding-left": "5px", "padding-right": "5px","font-family": "微软雅黑"}},
         {"type":"text","value":"Test status: Passed", "style":{"fontSize": "20px", "padding-left": "5px", "padding-right": "5px","font-family": "微软雅黑"} },
@@ -217,6 +223,7 @@ function printTestPage(printerName = '', pageWidth = '78mm') {
         {"type":"text","value":"${formattedDateTime}", "style":{ "textAlign": "left", "padding-left": "5px", "padding-right": "5px","font-family": "微软雅黑"} },
         { "type": "text", "value": "<br>", "style": {} }
     ]`;
+    /// 宽度小于50mm时，例如打印40mm*30mm, 测试小票
     if (pageWidth.split('*')[0].replace('mm', '').trim() <= 50) {
         printContent = `[
         {"type":"text","value":"${printerName}", "style":{"fotnSize": "10px", "textAlign": "left", "padding-left": "1px", "padding-right": "5px","font-family": "微软雅黑"}},
@@ -227,7 +234,9 @@ function printTestPage(printerName = '', pageWidth = '78mm') {
     ]`;
     }
     if (printerName !== null && printerName.trim() !== '') {
-        printReceipt(printerName, pageWidth, printContent);
+        printReceipt(printerName, pageWidth, printContent).then(r => {
+            console.info('>>> %s is printed OK.');
+        });
     }
 }
 
@@ -242,14 +251,6 @@ function openLogFile() {
         fs.writeFileSync(filePath, '');
     }
     return fileName;
-}
-
-function formatDate(timestamp) {
-    const date = new Date(timestamp);
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    return `${year}-${month}-${day}`;
 }
 
 module.exports = {getMessage, printReceipt, savePrinters, getCurrentLocation, openLogFile, printTestPage};

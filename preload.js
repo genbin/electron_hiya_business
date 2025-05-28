@@ -5,6 +5,11 @@ contextBridge.exposeInMainWorld('saveUserLoginData', (data) => {
     ipcRenderer.send('save-user-login-data', data);
 });
 
+// 处理来自flutter web的浏览器中应用的版本：
+contextBridge.exposeInMainWorld('saveSystemData', (data) => {
+    ipcRenderer.send('save-system-data', data);
+});
+
 // 获取系统打印机
 contextBridge.exposeInMainWorld('checkSystemPrinter', (data) => {
     ipcRenderer.send('check-system-printer', data);
