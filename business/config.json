@@ -10,7 +10,7 @@
   "serverApiHost": "60.205.204.131:8080",
   "appTitle": "Restaurant System",
   "defaultPrinterName": "EPSON",
-  "ver": "1.2.4",
+  "ver": "1.2.5",
   "deviceId": "40b11543-1eb0-4067-8882-1004ba105904",
   "googleMapsApiKey": "AIzaSyBybCFOIQmNMF1hM4gA53VD9efivM2epoY"
 }
