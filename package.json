@@ -7,7 +7,7 @@
   "version": "1.2.4",
   "author": "liugenbin",
   "scripts": {
-    "start": "electron .",
+    "start": "cross-env UPDATE_DEV=true electron .",
     "dist": "electron-builder"
   },
   "dependencies": {
@@ -16,12 +16,21 @@
     "electron-updater": "^6.6.2"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "electron": "24.8.8",
     "electron-builder": "^24.13.3"
   },
   "build": {
     "appId": "com.hiya-business.win10",
     "productName": "HiyaClient",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "genbin",
+        "repo": "hiya_updates",
+        "private": true
+      }
+    ],
     "copyright": "Copyright © 2024 ${author}",
     "asar": true,
     "directories": {
@@ -48,13 +57,6 @@
     "extraFiles": [
       "global.js",
       "api.js"
-    ],
-    "publish": [
-      {
-        "provider": "github",
-        "owner": "genbin",
-        "repo": "hiya_updates"
-      }
     ]
   }
 }

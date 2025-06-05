@@ -4,6 +4,7 @@ const path = require("path");
 const fs = require("fs");
 const {readFileSync} = require("node:fs");
 const {request} = require("node:https");
+const log = require("electron-log");
 let api;
 let host = `http://${config['serverApiHost']}`;
 api = {
@@ -11,8 +12,11 @@ api = {
     "saveSysSetting": `${host}/nxcloud-app-bff/nxcloud/nxcloud-app-bff/SysSettingApi/saveSysSetting`
 };
 
+let counterOnMessage = 0;
+
 function getMessage(shopCode) {
-    console.info('getMessage is called %s', shopCode);
+    counterOnMessage ++;
+    log.info('Messages (%s) is sent to printer In Shop(%s)', counterOnMessage, shopCode);
     fetch(api.getMessage, {
         method: 'POST',
         headers: {
@@ -192,7 +196,7 @@ function sendToPrinterWithData(printerName = '', pageWidth = '78mm', printConten
     if (printContent !== null && printContent.trim() !== ''
         && printerName !== null && printerName.trim() !== '') {
         printReceipt(printerName, pageWidth, printContent).then((value) => {
-            console.log('>>> %s is printed OK');
+            log.info(' printer(%s) has printed a receipt(%s) successfully', printerName, pageWidth);
         });
     }
 }

@@ -1,0 +1,4 @@
+provider: "github"
+owner: "genbin",
+repo: "hiya_updates",
+private: true,

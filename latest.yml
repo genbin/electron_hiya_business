@@ -1,0 +1,8 @@
+version: 1.2.4
+files:
+  - url: HiyaClient-Setup-1.2.4.exe
+    sha512: BxILLa+zWGm4n2fZWPT+Ec385jd8X4ZFvN3JKK4qPsyhRcRf2Ijft1Qs6lhH+geonN7YMt9hexC85hDvFh3b5Q==
+    size: 71306221
+path: HiyaClient-Setup-1.2.4.exe
+sha512: BxILLa+zWGm4n2fZWPT+Ec385jd8X4ZFvN3JKK4qPsyhRcRf2Ijft1Qs6lhH+geonN7YMt9hexC85hDvFh3b5Q==
+releaseDate: '2025-05-29T12:47:00.741Z'

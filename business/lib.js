@@ -66,6 +66,14 @@ function createMainWindow() {
 
             }).catch((err) => {
                 console.log(err);
+                electron.dialog.showMessageBoxSync(win, {
+                    type: 'info',
+                    title: '提示',
+                    detail: err,
+                    buttons: ['OK'],
+                    defaultId: 0,
+                    cancelId: 0
+                });
             });
         });
     }
@@ -90,10 +98,6 @@ function createMainWindow() {
 
     win.on('closed', (e) => {
         // win.close();
-    });
-
-    // 应用准备好后，检查更新
-    autoUpdater.checkForUpdatesAndNotify().then(r => {
     });
 
     // 自动更新事件监听
@@ -232,6 +236,18 @@ function createMainWindow() {
             printTestPage(printName, pageWidth);
         }
     });
+
+    // 仅当应用已打包或强制了开发更新配置时才检查更新
+    if (app.isPackaged || process.env.UPDATE_DEV || autoUpdater.forceDevUpdateConfig === true) {
+        autoUpdater.checkForUpdatesAndNotify().then(r => {
+            log.info('checkForUpdatesAndNotify called.');
+        }).catch(err => {
+            log.error('checkForUpdatesAndNotify error:', err);
+        });
+    } else {
+        log.info('Skipping checkForUpdates: App is not packaged and dev update config is not forced.');
+    }
+
 }
 
 function _debug() {
