@@ -194,29 +194,55 @@ function createMainWindow() {
     };
 
     /// 处理保存系统参数的事件
-    ipcMain.on('save-system-data', (event, version) => {
-        const currentConfig = getConfig();
-        if (version && typeof version === 'string') { // Ensure version is a valid string
-            const newVersionNumber = versionToNumber(version);
-            var currentVersionNumber = versionToNumber(currentConfig['ver']);
+    ipcMain.on('save-system-data', (event, incomingVersionStr) => {
+        if (!incomingVersionStr || typeof incomingVersionStr !== 'string') {
+            log.warn(`Invalid or missing version received from renderer: ${incomingVersionStr}`);
+            return;
+        }
 
-            if (win) {
-                win.setTitle(`${config['appTitle']} ${version}`);
+        const currentConfigFromFile = getConfig(); // Reads config.json
+        const currentVersionInFileStr = currentConfigFromFile['ver'];
+
+        const newVersionNum = versionToNumber(incomingVersionStr);
+        const currentVersionInFileNum = versionToNumber(currentVersionInFileStr);
+
+        log.info(`Received 'save-system-data'. Incoming version: ${incomingVersionStr} (parsed: ${newVersionNum}). Current version in config file: ${currentVersionInFileStr} (parsed: ${currentVersionInFileNum}).`);
+
+        // Update window title immediately with the version string from renderer,
+        // it will be corrected if update doesn't proceed.
+        if (win) {
+            win.setTitle(`${config['appTitle']} ${incomingVersionStr}`);
+        }
+
+        if (newVersionNum > currentVersionInFileNum) {
+            log.info(`Incoming version ${incomingVersionStr} is newer. Updating configuration and reloading.`);
+
+            const updatedConfigData = { ...currentConfigFromFile, ver: incomingVersionStr };
+            const success = writeFile('config.json', JSON.stringify(updatedConfigData)); // Ensure writeFile returns a status or throws clearly
+
+            if (success) { // Assuming writeFile is modified to return true on success
+                config['ver'] = incomingVersionStr; // Update in-memory global config
+
+                if (win) {
+                    log.info('Reloading window due to version update...');
+                    win.webContents.reloadIgnoringCache();
+                } else {
+                    log.warn('Window not available to reload.');
+                }
+            } else {
+                log.error(`Failed to write updated version ${incomingVersionStr} to config.json. Reload aborted.`);
+                // Optionally, revert title if write failed
+                if (win && config['ver']) {
+                    win.setTitle(`${config['appTitle']} ${config['ver']}`);
+                }
             }
-
-            log.info(`new version VS current version: ${newVersionNumber} VS ${currentVersionNumber}`);
-            if (newVersionNumber > currentVersionNumber) {
-                log.info(`Updated config.json with version: ${version}`);
-                currentConfig['ver'] = version; // Update the version string
-                writeFile('config.json', JSON.stringify(currentConfig)); // Save the updated config
-                config['ver'] = version; // Update in-memory config
-                log.info('Reloading window, ignoring cache...');
-                win.webContents.reloadIgnoringCache();
-                log.info(`Incoming version ${version} is not newer than current config version ${currentConfig['version']}. No update.`);
-            }
-
         } else {
-            log.warn(`Invalid or missing version received: ${version}`);
+            log.info(`Incoming version ${incomingVersionStr} is not newer than current ${currentVersionInFileStr}. No configuration update or reload needed.`);
+            // Ensure title reflects the actual current version from config if no update happened
+            if (win && config['ver'] && win.getTitle() !== `${config['appTitle']} ${config['ver']}`) {
+                log.info(`Correcting window title to actual current version: ${config['ver']}`);
+                win.setTitle(`${config['appTitle']} ${config['ver']}`);
+            }
         }
     });
     //

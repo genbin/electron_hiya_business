@@ -37,7 +37,7 @@ function writeFile(filePath, data) {
         const p = path.join(__dirname, filePath);
         fs.writeFileSync(p, data);
     } catch (err) {
-        console.error(`Error writing to ${filePath}:`, err);
+        log.info(`Error writing to ${filePath}:`, err);
     }
 }
 

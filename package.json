@@ -4,7 +4,7 @@
   "description": "Hiya Business",
   "keywords": [],
   "main": "./main.js",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "author": "liugenbin",
   "scripts": {
     "start": "cross-env UPDATE_DEV=true electron .",
