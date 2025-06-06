@@ -32,8 +32,8 @@ app.whenReady().then(() => {
     // 定义一个映射：第三方 Web 请求的字体 URL -> 本地字体文件名
     // 您需要通过浏览器开发者工具查看第三方 Web 应用实际请求的字体 URL
     const fontMap = {
-        [`${serverUrl}assets/assets/fonts/PingFangSC-Regular.otf`]: 'PingFangSC-Regular.otf',
-        [`${serverUrl}assets/assets/fonts/PingFangSC-Medium.otf`]: 'PingFangSC-Medium.otf'
+        [`${serverUrl}/assets/assets/fonts/PingFangSC-Regular.otf`]: 'PingFangSC-Regular.otf',
+        [`${serverUrl}/assets/assets/fonts/PingFangSC-Medium.otf`]: 'PingFangSC-Medium.otf'
     };
 
     const handleFontRequest = async (request, callback) => {
@@ -63,7 +63,7 @@ app.whenReady().then(() => {
     };
 
     // 注册 HTTP 协议处理器
-    ses.protocol.registerHttpProtocol('http', handleFontRequest);
+    // ses.protocol.registerHttpProtocol('http', handleFontRequest);
 
     createMainWindow();
 });

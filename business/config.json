@@ -6,11 +6,11 @@
   "minHeight": 900,
   "printPreview": false,
   "serverAddress": "http://60.205.204.131:9082/",
-  "testAddress": "http://localhost:49498/",
+  "testAddress": "http://localhost:53941/",
   "serverApiHost": "60.205.204.131:8080",
   "appTitle": "Restaurant System",
   "defaultPrinterName": "EPSON",
-  "ver": "1.2.66",
+  "ver": "1.2.67",
   "deviceId": "40b11543-1eb0-4067-8882-1004ba105904",
   "googleMapsApiKey": "AIzaSyBybCFOIQmNMF1hM4gA53VD9efivM2epoY"
 }
