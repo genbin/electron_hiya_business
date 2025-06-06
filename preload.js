@@ -20,11 +20,19 @@ contextBridge.exposeInMainWorld('printTestPage', (data, width) => {
     ipcRenderer.send('print-test-page', data, width);
 });
 
+contextBridge.exposeInMainWorld('clearCache', () => {
+    ipcRenderer.send('clear-cache');
+});
+
 /// 写在一起的方式, 未使用
 contextBridge.exposeInMainWorld("printerApi", {
     saveSystemData: (data) => ipcRenderer.send('save-system-data', data),
     checkSystemPrinter: (data) => ipcRenderer.send('check-system-printer', data),
     printTestPage: (data, width) => ipcRenderer.send('print-test-page', data, width)
+});
+
+contextBridge.exposeInMainWorld("systemApi", {
+    clearCache: () => ipcRenderer.send('clear-cache'),
 });
 
 /// 消息的通讯部分

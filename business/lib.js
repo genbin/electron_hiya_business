@@ -1,4 +1,4 @@
-const {BrowserWindow, ipcMain, app,} = require('electron');
+const {BrowserWindow, ipcMain, app, ipcRenderer,} = require('electron');
 const path = require('path');
 const fs = require('fs');
 const {getMessage, printReceipt, savePrinters, getCurrentLocation, printTestPage} = require("./api");
@@ -35,14 +35,23 @@ function createMainWindow() {
             contextIsolation: true, // 启用隔离
             devTools: true,
             webSecurity: false, //禁用同源策略
-            plugins: false, //是否支持插件
-            nativeWindowOpen: false, //是否使用原生的window.open()
+            // plugins: true, //是否支持插件
+            nativeWindowOpen: true, //是否使用原生的window.open()
             // webviewTag: true, //是否启用 <webview> tag标签
             sandbox: true,
             preload: path.join(__dirname, '../preload.js')
         }
     });
 
+    // const loadingHtmlPath = path.join(__dirname, 'loading.html');
+    // log.info(`Attempting to load loading page: ${loadingHtmlPath}`);
+    // win.loadFile(loadingHtmlPath);
+    //
+    // // 2. 当窗口准备好显示时再显示，避免白屏
+    // win.once('ready-to-show', () => {
+    //     win.show();
+    //     win.maximize(); // 或者根据您的需求设置窗口状态
+    // });
 
     if (config['hasCache']) {
         let serverUrl = config['serverAddress'];
@@ -97,7 +106,13 @@ function createMainWindow() {
     })
 
     win.on('closed', (e) => {
-        // win.close();
+        log.info('App is quitting. Clearing cache...');
+        // 访问默认会话并清除缓存
+        electron.session.defaultSession.clearCache().then(() => {
+            log.info('Browser cache cleared successfully.');
+        }).catch((err) => {
+            log.error('Failed to clear browser cache on quit:', err);
+        });
     });
 
     // 自动更新事件监听
@@ -217,7 +232,7 @@ function createMainWindow() {
         if (newVersionNum > currentVersionInFileNum) {
             log.info(`Incoming version ${incomingVersionStr} is newer. Updating configuration and reloading.`);
 
-            const updatedConfigData = { ...currentConfigFromFile, ver: incomingVersionStr };
+            const updatedConfigData = {...currentConfigFromFile, ver: incomingVersionStr};
             const success = writeFile('config.json', JSON.stringify(updatedConfigData)); // Ensure writeFile returns a status or throws clearly
 
             if (success) { // Assuming writeFile is modified to return true on success
@@ -245,7 +260,16 @@ function createMainWindow() {
             }
         }
     });
-    //
+
+    ipcMain.on('clear-cache', (event) => {
+        log.info('App is quitting. Clearing cache...');
+        electron.session.defaultSession.clearCache().then(() => {
+            log.info('Browser cache cleared successfully.');
+        }).catch((err) => {
+            log.error('Failed to clear browser cache on quit:', err);
+        });
+    });
+
     // 处理来自浏览器内部的调用，获取系统打印机
     ipcMain.on('check-system-printer', (event, data) => {
         console.log('check system printer ..... getSystemPrinter and saveTo server');

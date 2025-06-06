@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>正在加载...</title>
+  <style>
+      body, html {
+          height: 100%;
+          margin: 0;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          /* 将背景色修改为较深的与 #DEB068 搭配的颜色，或者直接使用 #DEB068 的深色变体 */
+          background-color: #fbfbfb; /* 一个示例深棕色，与 #DEB068 搭配 */
+          color: #DEB068; /* 文字颜色可以保持白色，或根据新背景调整 */
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+          overflow: hidden; /* 防止滚动条 */
+      }
+      .container {
+          text-align: center;
+      }
+      .spinner {
+          border: 5px solid #f3f3f3; /* 加载环的浅色部分可以保持不变，或使用 #DEB068 的浅色变体 */
+          /* 将加载环的活动部分颜色修改为 #DEB068 */
+          border-top: 5px solid #DEB068;
+          border-radius: 50%;
+          width: 50px;
+          height: 50px;
+          animation: spin 1s linear infinite;
+          margin: 0 auto 20px auto;
+      }
+      @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+      }
+      p {
+          font-size: 1.2em;
+      }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="spinner"></div>
+  <p>正在努力加载，请稍候...</p>
+</div>
+</body>
+</html>

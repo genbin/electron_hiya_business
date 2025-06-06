@@ -4,7 +4,7 @@
   "description": "Hiya Business",
   "keywords": [],
   "main": "./main.js",
-  "version": "1.2.6",
+  "version": "1.2.53",
   "author": "liugenbin",
   "scripts": {
     "start": "cross-env UPDATE_DEV=true electron .",
@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "cross-env": "^7.0.3",
-    "electron": "24.8.8",
+    "electron": "^24.8.8",
     "electron-builder": "^24.13.3"
   },
   "build": {
@@ -52,7 +52,11 @@
       "deleteAppDataOnUninstall": false
     },
     "extraResources": [
-      "config.json"
+      "config.json",
+      {
+        "from": "assets/fonts",
+        "to": "assets/fonts"
+      }
     ],
     "extraFiles": [
       "global.js",
