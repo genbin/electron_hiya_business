@@ -1,6 +1,7 @@
 const {BrowserWindow, ipcMain, app, ipcRenderer,} = require('electron');
 const path = require('path');
 const fs = require('fs');
+const yaml = require('js-yaml');
 const {getMessage, printReceipt, savePrinters, getCurrentLocation, printTestPage} = require("./api");
 const {config, shop, getConfig, writeFile} = require("./global");
 const {screen} = require("electron");
@@ -30,11 +31,11 @@ function createMainWindow() {
         center: true,
         webPreferences: {
             additionalArguments: [],
-            allowRunningInsecureContent: true,
+            allowRunningInsecureContent: false,
             nodeIntegration: false, // Do not enable Node.js integration
             contextIsolation: true, // 启用隔离
             devTools: true,
-            webSecurity: false, //禁用同源策略
+            webSecurity: true, //禁用同源策略
             // plugins: true, //是否支持插件
             nativeWindowOpen: true, //是否使用原生的window.open()
             // webviewTag: true, //是否启用 <webview> tag标签
@@ -158,7 +159,7 @@ function createMainWindow() {
             detail: '新版本已下载。重启应用程序以应用更新。'
         };
 
-        dialog.showMessageBox(win, dialogOpts).then((returnValue) => {
+        electron.dialog.showMessageBox(win, dialogOpts).then((returnValue) => {
             if (returnValue.response === 0) { // "立即重启"
                 autoUpdater.quitAndInstall();
             }
@@ -226,37 +227,30 @@ function createMainWindow() {
         // Update window title immediately with the version string from renderer,
         // it will be corrected if update doesn't proceed.
         if (win) {
-            win.setTitle(`${config['appTitle']} ${incomingVersionStr}`);
+            // const projectBasePath = app.getAppPath(); // 或者更可靠的路径，如 process.cwd() 如果脚本从项目根运行，或固定路径
+            // const versionFromPubspec = getVersionFromPubspec(projectBasePath);
+            win.setTitle(`${config['appTitle']} ${app.getVersion()}`);
         }
 
         if (newVersionNum > currentVersionInFileNum) {
             log.info(`Incoming version ${incomingVersionStr} is newer. Updating configuration and reloading.`);
 
             const updatedConfigData = {...currentConfigFromFile, ver: incomingVersionStr};
-            const success = writeFile('config.json', JSON.stringify(updatedConfigData)); // Ensure writeFile returns a status or throws clearly
+            writeFile('config.json', JSON.stringify(updatedConfigData)); // Ensure writeFile returns a status or throws clearly
+            config['ver'] = incomingVersionStr; // Update in-memory global config
 
-            if (success) { // Assuming writeFile is modified to return true on success
-                config['ver'] = incomingVersionStr; // Update in-memory global config
-
-                if (win) {
-                    log.info('Reloading window due to version update...');
-                    win.webContents.reloadIgnoringCache();
-                } else {
-                    log.warn('Window not available to reload.');
-                }
+            if (win) {
+                log.info('Reloading window due to version update...');
+                // win.webContents.reloadIgnoringCache();
             } else {
-                log.error(`Failed to write updated version ${incomingVersionStr} to config.json. Reload aborted.`);
-                // Optionally, revert title if write failed
-                if (win && config['ver']) {
-                    win.setTitle(`${config['appTitle']} ${config['ver']}`);
-                }
+                log.warn('Window not available to reload.');
             }
         } else {
             log.info(`Incoming version ${incomingVersionStr} is not newer than current ${currentVersionInFileStr}. No configuration update or reload needed.`);
             // Ensure title reflects the actual current version from config if no update happened
             if (win && config['ver'] && win.getTitle() !== `${config['appTitle']} ${config['ver']}`) {
                 log.info(`Correcting window title to actual current version: ${config['ver']}`);
-                win.setTitle(`${config['appTitle']} ${config['ver']}`);
+                win.setTitle(`${config['appTitle']} ${app.getVersion()}`);
             }
         }
     });
@@ -309,6 +303,27 @@ function _debug() {
 function _delayAndExecute(callback) {
     setTimeout(callback, 20 * 1000);
 }
+
+///
+function getVersionFromPubspec(projectRoot) {
+    // 假设 pubspec.yaml 在项目根目录下
+    // 您可能需要根据实际的项目结构调整此路径
+    const pubspecPath = path.join(projectRoot, 'pubspec.yaml');
+    try {
+        if (fs.existsSync(pubspecPath)) {
+            const fileContents = fs.readFileSync(pubspecPath, 'utf8');
+            const doc = yaml.load(fileContents);
+            return doc.version;
+        } else {
+            log.warn(`pubspec.yaml not found at: ${pubspecPath}`);
+            return null;
+        }
+    } catch (e) {
+        log.error(`Error reading or parsing pubspec.yaml at ${pubspecPath}:`, e);
+        return null;
+    }
+}
+
 
 function getSystemPrinters(shopCode) {
     /// 获取系统中的打印机，并写入文件printers.json, 写入剪贴板
