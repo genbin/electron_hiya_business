@@ -6,7 +6,7 @@
   "minHeight": 900,
   "printPreview": false,
   "serverAddress": "http://60.205.204.131:9082/",
-  "testAddress": "http://localhost:53941/",
+  "testAddress": "http://localhost:56153/",
   "serverApiHost": "60.205.204.131:8080",
   "appTitle": "Restaurant System",
   "defaultPrinterName": "EPSON",

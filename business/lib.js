@@ -24,7 +24,7 @@ function createMainWindow() {
         width: size.width,
         minWidth: config["minWidth"],
         minHeight: config["minHeight"],
-        title: `${config['appTitle']} ${config['ver']}`,
+        title: getTitleVersion(),
         resizable: true,
         fullscreenable: true,
         autoHideMenuBar: true,
@@ -45,10 +45,7 @@ function createMainWindow() {
     });
 
     // const loadingHtmlPath = path.join(__dirname, 'loading.html');
-    // log.info(`Attempting to load loading page: ${loadingHtmlPath}`);
     // win.loadFile(loadingHtmlPath);
-    //
-    // // 2. 当窗口准备好显示时再显示，避免白屏
     // win.once('ready-to-show', () => {
     //     win.show();
     //     win.maximize(); // 或者根据您的需求设置窗口状态
@@ -95,16 +92,20 @@ function createMainWindow() {
         const choice = electron.dialog.showMessageBoxSync(win, {
             type: 'info',
             title: '提示',
-            message: '确认退出',
-            buttons: ['最小化运行', '立即退出'],
-            defaultId: 0,
-            cancelId: 0
+            message: '确认退出?', // 稍微修改了下提示信息，更像一个问题
+            buttons: ['最小化运行', '立即退出', '取消'], // 增加了 "取消" 按钮
+            defaultId: 0, // "最小化运行" 仍然是默认
+            cancelId: 2   // 将 "取消" 按钮设置为取消操作 (例如按 ESC 键会选中此项)
         });
-        if (choice === 0) {
+
+        if (choice === 0) { // 用户选择 "最小化运行"
             e.preventDefault();
             win.minimize();
+        } else if (choice === 2) { // 用户选择 "取消"
+            e.preventDefault(); // 阻止窗口关闭
         }
-    })
+        // 如果 choice === 1 ("立即退出")，则不执行 e.preventDefault()，窗口会正常关闭
+    });
 
     win.on('closed', (e) => {
         log.info('App is quitting. Clearing cache...');
@@ -226,11 +227,6 @@ function createMainWindow() {
 
         // Update window title immediately with the version string from renderer,
         // it will be corrected if update doesn't proceed.
-        if (win) {
-            // const projectBasePath = app.getAppPath(); // 或者更可靠的路径，如 process.cwd() 如果脚本从项目根运行，或固定路径
-            // const versionFromPubspec = getVersionFromPubspec(projectBasePath);
-            win.setTitle(`${config['appTitle']} ${app.getVersion()}`);
-        }
 
         if (newVersionNum > currentVersionInFileNum) {
             log.info(`Incoming version ${incomingVersionStr} is newer. Updating configuration and reloading.`);
@@ -250,8 +246,11 @@ function createMainWindow() {
             // Ensure title reflects the actual current version from config if no update happened
             if (win && config['ver'] && win.getTitle() !== `${config['appTitle']} ${config['ver']}`) {
                 log.info(`Correcting window title to actual current version: ${config['ver']}`);
-                win.setTitle(`${config['appTitle']} ${app.getVersion()}`);
+                win.setTitle(getTitleVersion());
             }
+        }
+        if (win) {
+            win.setTitle(getTitleVersion());
         }
     });
 
@@ -337,6 +336,10 @@ function getSystemPrinters(shopCode) {
             console.error('Error saving printers to JSON:', err);
         }
     });
+}
+
+function getTitleVersion () {
+    return `${config['appTitle']} [ver: m${app.getVersion()}.${config["ver"]}]`;
 }
 
 module.exports = {createMainWindow};
