@@ -66,6 +66,7 @@ function createAndLoadWindows() {
         if (loadingWindow) {
             loadingWindow.close();
         }
+        app.quit();
     });
 }
 
@@ -124,7 +125,6 @@ app.whenReady().then(() => {
     }
 
     log.info('creating the main Window ...');
-    // createMainWindow();
     createAndLoadWindows();
 });
 
@@ -136,7 +136,6 @@ app.on('window-all-closed', () => {
 // Handle activate event
 app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-        // createMainWindow();
         createAndLoadWindows();
     }
 });
