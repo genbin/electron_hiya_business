@@ -32,47 +32,60 @@
 
       .container {
           display: flex;
-          flex-direction: column; /* 修改：使子元素垂直堆叠 */
-          align-items: center;   /* 使垂直堆叠的子元素在交叉轴（水平）上居中 */
-          justify-content: center; /* 使垂直堆叠的子元素在主轴（垂直）上居中 */
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
           text-align: center;
       }
 
       .logo-image {
-          /* 假设 logo 图片在 images 文件夹下 */
-          /* 您可以根据需要调整 logo 的大小和边距 */
-          max-width: 150px; /* 示例：限制logo最大宽度 */
+          max-width: 150px;
           height: auto;
-          margin-bottom: 20px; /* 在logo和下方的加载指示器之间添加一些间距 */
+          margin-bottom: 20px;
       }
 
       .loading-indicator {
-          display: flex;       /* 新增：使 spinner 和 p 标签在同一行 */
-          align-items: center;   /* 新增：垂直居中 spinner 和 p 标签 */
+          /* 这个容器现在只包含进度条，可以简化或移除特定flex对齐（如果不再需要） */
+          /* display: flex; */
+          /* align-items: center; */
       }
 
-      .spinner {
-          border: 5px solid #f3f3f3;
-          border-top: 5px solid #DEB068;
-          border-radius: 50%;
-          width: 25px;  /* 您可以根据需要调整 spinner 大小 */
-          height: 25px;
-          animation: spin 1s linear infinite;
-          margin-right: 15px;
+      /* 移除 spinner 样式 */
+      /* .spinner { ... } */
+
+      /* 移除 p 标签样式，如果不再使用文字 */
+      /* p { ... } */
+
+      .progress-bar-container {
+          width: 200px;
+          height: 3px;
+          background-color: #f3f3f3; /* 进度条背景色 */
+          border-radius: 2px; /* 可选：给进度条一点圆角 */
+          overflow: hidden; /* 确保内部进度条不会溢出 */
       }
 
-      @keyframes spin {
+      .progress-bar-fill {
+          width: 0%; /* 初始宽度为0 */
+          height: 100%;
+          background-color: #DEB068; /* 进度条填充颜色 */
+          border-radius: 1px; /* 与容器一致 */
+          animation: fillProgressBar 30s linear forwards; /* 动画名称、时长、速度曲线、结束状态 */
+      }
+
+      @keyframes fillProgressBar {
           0% {
-              transform: rotate(0deg);
+              width: 0%;
           }
           100% {
-              transform: rotate(360deg);
+              width: 100%;
           }
       }
 
-      p {
-          font-size: 1.2em;
-          margin: 0;
+      .logo-image {
+          max-width: 150px;
+          height: auto;
+          margin-bottom: 20px;
+          filter: grayscale(100%) brightness(0) invert(1); /* 增强：更彻底地将图片变为白色 */
       }
   </style>
 </head>
@@ -83,10 +96,11 @@
 
 <!-- 内容层 -->
 <div class="container">
-<!--  <img src="images/logo.png" alt="Logo" class="logo-image"> &lt;!&ndash; 新增 Logo 图片 &ndash;&gt;-->
-  <div class="loading-indicator"> <!-- 新增包裹层 -->
-    <div class="spinner"></div>
-    <p>正在努力加载，请稍候...</p>
+  <img src="images/logo.png" alt="Logo" class="logo-image"> <!-- Logo 图片 -->
+  <div class="loading-indicator">
+    <div class="progress-bar-container">
+      <div class="progress-bar-fill"></div>
+    </div>
   </div>
 </div>
 
