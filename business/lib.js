@@ -35,11 +35,11 @@ function createMainWindow(isVisible) {
             nodeIntegration: false, // Do not enable Node.js integration
             contextIsolation: true, // 启用隔离
             devTools: true,
-            webSecurity: false, //禁用同源策略
+            webSecurity: true, //禁用同源策略
             // plugins: true, //是否支持插件
             nativeWindowOpen: true, //是否使用原生的window.open()
             // webviewTag: true, //是否启用 <webview> tag标签
-            sandbox: true,
+            sandbox: false,
             preload: path.join(__dirname, '../preload.js')
         }
     });

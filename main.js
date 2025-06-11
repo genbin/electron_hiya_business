@@ -70,6 +70,9 @@ function createAndLoadWindows() {
     });
 }
 
+// 可以根据需要调整这个值，例如 1024 (1GB), 2048 (2GB), 4096 (4GB)
+// 注意：设置过大而系统物理内存不足可能会导致负面影响
+app.commandLine.appendSwitch('js-flags', '--max-old-space-size=1024');
 app.commandLine.appendSwitch('lang', 'en-US');
 app.whenReady().then(() => {
     log.info('App initialise...')
