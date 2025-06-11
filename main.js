@@ -6,6 +6,63 @@ const {createMainWindow} = require('./business/lib');
 const {config} = require("./business/global");
 const log = require('electron-log'); // 可选，用于日志记录
 
+let loadingWindow;
+let mainWindow;
+function createAndLoadWindows() {
+    // 1. 创建并显示加载窗口
+    loadingWindow = new BrowserWindow({
+        width: 400, // 您可以根据 loading.html 的设计调整尺寸
+        height: 300,
+        frame: false, // 可选：无边框窗口
+        show: true,   // 立即显示
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+        }
+    });
+
+    loadingWindow.loadFile(path.join(__dirname, 'business/loading.html'));
+    loadingWindow.on('closed', () => {
+        loadingWindow = null;
+    });
+
+    // 2. 创建主内容窗口，初始隐藏
+    mainWindow = new BrowserWindow({
+        width: 1200, // 您的主窗口尺寸
+        height: 800,
+        show: false, // 关键：初始不显示
+        webPreferences: {
+            // 根据您的需求配置，例如:
+            // nodeIntegration: true, // 如果第三方页面或您的脚本需要
+            // contextIsolation: true,
+            // preload: path.join(__dirname, 'preload.js')
+        }
+    });
+
+    // 替换为您的第三方页面URL
+    const thirdPartyUrl = 'http://60.205.204.131:9082/';
+    mainWindow = createMainWindow(false);
+
+    // 3. 监听主窗口内容加载完成事件
+    mainWindow.webContents.on('did-finish-load', () => {
+        // 4. 当第三方页面加载完成后，关闭加载窗口并显示主窗口
+        if (loadingWindow) {
+            loadingWindow.close();
+        }
+        if (mainWindow) {
+            mainWindow.show();
+        }
+    });
+
+    mainWindow.on('closed', () => {
+        mainWindow = null;
+        // 如果主窗口关闭时加载窗口可能还存在（例如，主窗口在加载完成前被关闭）
+        if (loadingWindow) {
+            loadingWindow.close();
+        }
+    });
+}
+
 app.commandLine.appendSwitch('lang', 'en-US');
 app.whenReady().then(() => {
     log.info('App initialise...')
@@ -15,10 +72,14 @@ app.whenReady().then(() => {
         serverUrl = config['testAddress'];
     }
 
+    /// FontAwesome暂时无法离线，内部不能通过file协议
     const fontMap = {
-        [`${serverUrl}assets/assets/fonts/PingFangSC-Regular.otf`]: 'PingFangSC-Regular.otf',
-        [`${serverUrl}assets/assets/fonts/PingFangSC-Medium.otf`]: 'PingFangSC-Medium.otf',
-        [`${serverUrl}assets/assets/fonts/NotoSansSC-Regular.ttf`]: 'NotoSansSC-Regular.ttf'
+        [`${serverUrl}assets/assets/fonts/PingFangSC-Regular.otf`]: 'assets/fonts/PingFangSC-Regular.otf',
+        [`${serverUrl}assets/assets/fonts/PingFangSC-Medium.otf`]: 'assets/fonts/PingFangSC-Medium.otf',
+        [`${serverUrl}assets/assets/fonts/NotoSansSC-Regular.ttf`]: 'assets/fonts/NotoSansSC-Regular.ttf',
+        [`${serverUrl}assets/fonts/MaterialIcons-Regular.otf`]: 'MaterialIcons-Regular.otf',
+        [`${serverUrl}assets/packages/cupertino_icons/assets/CupertinoIcons.ttf`]: 'assets/fonts/CupertinoIcons.ttf',
+        [`${serverUrl}favicon.png`]: 'assets/images/favicon.png',
     };
 
     // 使用 webRequest API 拦截特定字体请求
@@ -33,7 +94,7 @@ app.whenReady().then(() => {
 
             if (requestedFontFileName) {
                 const basePath = app.isPackaged ? process.resourcesPath : app.getAppPath();
-                const fontPath = path.join(basePath, 'assets/fonts', requestedFontFileName);
+                const fontPath = path.join(basePath, requestedFontFileName);
                 try {
                     await fs.access(fontPath, fs.constants.R_OK);
                     log.info(`[webRequest] Redirecting to local font: file://${fontPath} for ${originalUrl}`);
@@ -54,7 +115,8 @@ app.whenReady().then(() => {
     }
 
     log.info('creating the main Window ...');
-    createMainWindow();
+    // createMainWindow();
+    createAndLoadWindows();
 });
 
 // Handle window all closed event
@@ -65,7 +127,8 @@ app.on('window-all-closed', () => {
 // Handle activate event
 app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-        createMainWindow();
+        // createMainWindow();
+        createAndLoadWindows();
     }
 });
 

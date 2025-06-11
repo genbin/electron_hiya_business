@@ -6,23 +6,43 @@
   <style>
       body, html {
           height: 100%;
+          width: 100%;
           margin: 0;
           display: flex;
           justify-content: center;
           align-items: center;
-          /* 将背景色修改为较深的与 #DEB068 搭配的颜色，或者直接使用 #DEB068 的深色变体 */
-          background-color: #fbfbfb; /* 一个示例深棕色，与 #DEB068 搭配 */
-          color: #DEB068; /* 文字颜色可以保持白色，或根据新背景调整 */
+          /* 移除背景色，让图片背景透出来 */
+          color: #DEB068;
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
           overflow: hidden; /* 防止滚动条 */
+          position: relative; /* 为绝对定位的子元素提供参照 */
       }
+
+      .background-image-blur {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          /* 在此处替换为您的背景图片路径 */
+          background-image: url('images/bg.png');
+          background-size: cover;
+          background-position: center;
+          /* 调整模糊程度，数值越大越模糊 */
+          filter: blur(2px);
+          z-index: -1; /* 确保背景在最底层 */
+      }
+
       .container {
           text-align: center;
+          /* 如果需要，可以给容器加一个半透明背景色，让文字更突出 */
+          /* background-color: rgba(0, 0, 0, 0.3); */
+          /* padding: 20px; */
+          /* border-radius: 8px; */
       }
       .spinner {
-          border: 5px solid #f3f3f3; /* 加载环的浅色部分可以保持不变，或使用 #DEB068 的浅色变体 */
-          /* 将加载环的活动部分颜色修改为 #DEB068 */
-          border-top: 5px solid #DEB068;
+          border: 5px solid #f3f3f3; /* 加载环的浅色部分 */
+          border-top: 5px solid #DEB068; /* 加载环的活动部分颜色 */
           border-radius: 50%;
           width: 50px;
           height: 50px;
@@ -35,13 +55,21 @@
       }
       p {
           font-size: 1.2em;
+          /* 如果背景图颜色复杂，可以给文字加一点阴影使其更清晰 */
+          /* text-shadow: 0px 0px 5px rgba(0,0,0,0.7); */
       }
   </style>
 </head>
 <body>
+
+<!-- 背景图层 -->
+<div class="background-image-blur"></div>
+
+<!-- 内容层 -->
 <div class="container">
   <div class="spinner"></div>
   <p>正在努力加载，请稍候...</p>
 </div>
+
 </body>
 </html>

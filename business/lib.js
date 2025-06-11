@@ -15,9 +15,8 @@ autoUpdater.logger.transports.file.level = 'info';
 log.info('App starting...')
 
 let win;
-
 // Create main window
-function createMainWindow() {
+function createMainWindow(isVisible) {
     const size = screen.getPrimaryDisplay().size;
     win = new BrowserWindow({
         height: size.height,
@@ -26,6 +25,7 @@ function createMainWindow() {
         minHeight: config["minHeight"],
         title: getTitleVersion(),
         resizable: true,
+        show: isVisible,
         fullscreenable: true,
         autoHideMenuBar: true,
         center: true,
@@ -43,13 +43,6 @@ function createMainWindow() {
             preload: path.join(__dirname, '../preload.js')
         }
     });
-
-    // const loadingHtmlPath = path.join(__dirname, 'loading.html');
-    // win.loadFile(loadingHtmlPath);
-    // win.once('ready-to-show', () => {
-    //     win.show();
-    //     win.maximize(); // 或者根据您的需求设置窗口状态
-    // });
 
     if (config['hasCache']) {
         let serverUrl = config['serverAddress'];
@@ -291,6 +284,7 @@ function createMainWindow() {
         log.info('Skipping checkForUpdates: App is not packaged and dev update config is not forced.');
     }
 
+    return win;
 }
 
 function _debug() {
