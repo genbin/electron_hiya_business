@@ -100,15 +100,15 @@ function createMainWindow(isVisible) {
         // 如果 choice === 1 ("立即退出")，则不执行 e.preventDefault()，窗口会正常关闭
     });
 
-    win.on('closed', (e) => {
-        log.info('App is quitting. Clearing cache...');
-        // 访问默认会话并清除缓存
-        electron.session.defaultSession.clearCache().then(() => {
-            log.info('Browser cache cleared successfully.');
-        }).catch((err) => {
-            log.error('Failed to clear browser cache on quit:', err);
-        });
-    });
+    // win.on('closed', (e) => {
+    //     log.info('App is quitting. Clearing cache...');
+    //     // 访问默认会话并清除缓存
+    //     electron.session.defaultSession.clearCache().then(() => {
+    //         log.info('Browser cache cleared successfully.');
+    //     }).catch((err) => {
+    //         log.error('Failed to clear browser cache on quit:', err);
+    //     });
+    // });
 
     // 自动更新事件监听
     autoUpdater.on('checking-for-update', () => {

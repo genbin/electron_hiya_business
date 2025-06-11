@@ -4,7 +4,8 @@ const fs = require('fs').promises; // 用于异步文件操作
 
 const {createMainWindow} = require('./business/lib');
 const {config} = require("./business/global");
-const log = require('electron-log'); // 可选，用于日志记录
+const log = require('electron-log');
+const electron = require("electron"); // 可选，用于日志记录
 
 let loadingWindow;
 let mainWindow;
@@ -40,7 +41,6 @@ function createAndLoadWindows() {
     });
 
     // 替换为您的第三方页面URL
-    const thirdPartyUrl = 'http://60.205.204.131:9082/';
     mainWindow = createMainWindow(false);
 
     // 3. 监听主窗口内容加载完成事件
@@ -55,6 +55,13 @@ function createAndLoadWindows() {
     });
 
     mainWindow.on('closed', () => {
+        log.info('App is quitting. Clearing cache...');
+        // 访问默认会话并清除缓存
+        electron.session.defaultSession.clearCache().then(() => {
+            log.info('Browser cache cleared successfully.');
+        }).catch((err) => {
+            log.error('Failed to clear browser cache on quit:', err);
+        });
         mainWindow = null;
         // 如果主窗口关闭时加载窗口可能还存在（例如，主窗口在加载完成前被关闭）
         if (loadingWindow) {
