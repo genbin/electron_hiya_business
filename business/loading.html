@@ -11,11 +11,10 @@
           display: flex;
           justify-content: center;
           align-items: center;
-          /* 移除背景色，让图片背景透出来 */
           color: #DEB068;
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-          overflow: hidden; /* 防止滚动条 */
-          position: relative; /* 为绝对定位的子元素提供参照 */
+          overflow: hidden;
+          position: relative;
       }
 
       .background-image-blur {
@@ -24,39 +23,56 @@
           left: 0;
           width: 100%;
           height: 100%;
-          /* 在此处替换为您的背景图片路径 */
-          background-image: url('images/bg.png');
+          background-image: url('images/bg_loading.png'); /* 请确保图片路径正确 */
           background-size: cover;
           background-position: center;
-          /* 调整模糊程度，数值越大越模糊 */
           filter: blur(2px);
-          z-index: -1; /* 确保背景在最底层 */
+          z-index: -1;
       }
 
       .container {
+          display: flex;
+          flex-direction: column; /* 修改：使子元素垂直堆叠 */
+          align-items: center;   /* 使垂直堆叠的子元素在交叉轴（水平）上居中 */
+          justify-content: center; /* 使垂直堆叠的子元素在主轴（垂直）上居中 */
           text-align: center;
-          /* 如果需要，可以给容器加一个半透明背景色，让文字更突出 */
-          /* background-color: rgba(0, 0, 0, 0.3); */
-          /* padding: 20px; */
-          /* border-radius: 8px; */
       }
+
+      .logo-image {
+          /* 假设 logo 图片在 images 文件夹下 */
+          /* 您可以根据需要调整 logo 的大小和边距 */
+          max-width: 150px; /* 示例：限制logo最大宽度 */
+          height: auto;
+          margin-bottom: 20px; /* 在logo和下方的加载指示器之间添加一些间距 */
+      }
+
+      .loading-indicator {
+          display: flex;       /* 新增：使 spinner 和 p 标签在同一行 */
+          align-items: center;   /* 新增：垂直居中 spinner 和 p 标签 */
+      }
+
       .spinner {
-          border: 5px solid #f3f3f3; /* 加载环的浅色部分 */
-          border-top: 5px solid #DEB068; /* 加载环的活动部分颜色 */
+          border: 5px solid #f3f3f3;
+          border-top: 5px solid #DEB068;
           border-radius: 50%;
-          width: 50px;
-          height: 50px;
+          width: 25px;  /* 您可以根据需要调整 spinner 大小 */
+          height: 25px;
           animation: spin 1s linear infinite;
-          margin: 0 auto 20px auto;
+          margin-right: 15px;
       }
+
       @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
+          0% {
+              transform: rotate(0deg);
+          }
+          100% {
+              transform: rotate(360deg);
+          }
       }
+
       p {
           font-size: 1.2em;
-          /* 如果背景图颜色复杂，可以给文字加一点阴影使其更清晰 */
-          /* text-shadow: 0px 0px 5px rgba(0,0,0,0.7); */
+          margin: 0;
       }
   </style>
 </head>
@@ -67,8 +83,11 @@
 
 <!-- 内容层 -->
 <div class="container">
-  <div class="spinner"></div>
-  <p>正在努力加载，请稍候...</p>
+<!--  <img src="images/logo.png" alt="Logo" class="logo-image"> &lt;!&ndash; 新增 Logo 图片 &ndash;&gt;-->
+  <div class="loading-indicator"> <!-- 新增包裹层 -->
+    <div class="spinner"></div>
+    <p>正在努力加载，请稍候...</p>
+  </div>
 </div>
 
 </body>

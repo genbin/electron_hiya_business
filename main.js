@@ -62,7 +62,6 @@ function createAndLoadWindows() {
         }).catch((err) => {
             log.error('Failed to clear browser cache on quit:', err);
         });
-        mainWindow = null;
         // 如果主窗口关闭时加载窗口可能还存在（例如，主窗口在加载完成前被关闭）
         if (loadingWindow) {
             loadingWindow.close();
