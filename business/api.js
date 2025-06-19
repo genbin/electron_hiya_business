@@ -4,6 +4,7 @@ const path = require("path");
 const fs = require("fs");
 const {readFileSync} = require("node:fs");
 const {request} = require("node:https");
+const {openCashDrawer} = require("./lib");
 const log = require("electron-log");
 let api;
 let host = `http://${config['serverApiHost']}`;
@@ -13,9 +14,8 @@ api = {
 };
 
 let counterOnMessage = 0;
-
 function getMessage(shopCode) {
-    counterOnMessage ++;
+    counterOnMessage++;
     log.info('Messages (%s) is sent to printer In Shop(%s)', counterOnMessage, shopCode);
     fetch(api.getMessage, {
         method: 'POST',
@@ -107,16 +107,15 @@ function parsePageSizeString(pageSizeStr) {
 async function printReceipt(printName, pageWidth = '78mm', printData) {
     var receiptWidth = parsePageSizeString(pageWidth);
     console.log(`>>> printName %s, pageWidth: %s, receiptWidth: %s`, printName, pageWidth, receiptWidth);
-    var options = {
+    const options = {
         preview: config['printPreview'] ?? false,
-        // preview: false,
         silent: true,
         margin: 'auto',
-        timeOutPerLine: 0,
+        timeOutPerLine: 400,
         copies: 1,
         printerName: '',
         openCashDrawer: true,
-        drawerNumber: 1,
+        drawerNumber: 0,
         margins: {
             top: 0,
             bottom: 0,
@@ -128,8 +127,7 @@ async function printReceipt(printName, pageWidth = '78mm', printData) {
             horizontal: 15
         },
         pageSize: receiptWidth  // page size
-        // pageSize: {"width": 400, "height": 300}  // page size
-    }
+    };
     options['printerName'] = printName;
     await PosPrinter.print(JSON.parse(printData), options).then(() => {
         console.info('print receipt is successful');
@@ -201,21 +199,6 @@ function sendToPrinterWithData(printerName = '', pageWidth = '78mm', printConten
     }
 }
 
-/// 获得当前日期时间
-function getFormattedCurrentDateTime() {
-    const now = new Date();
-
-    const year = now.getFullYear();
-    const month = (now.getMonth() + 1).toString().padStart(2, '0'); // Months are 0-indexed
-    const day = now.getDate().toString().padStart(2, '0');
-
-    const hours = now.getHours().toString().padStart(2, '0');
-    const minutes = now.getMinutes().toString().padStart(2, '0');
-    const seconds = now.getSeconds().toString().padStart(2, '0');
-
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-}
-
 /// 测试小票
 function printTestPage(printerName = '', pageWidth = '78mm') {
     const formattedDateTime = getFormattedCurrentDateTime();
@@ -239,9 +222,26 @@ function printTestPage(printerName = '', pageWidth = '78mm') {
     }
     if (printerName !== null && printerName.trim() !== '') {
         printReceipt(printerName, pageWidth, printContent).then(r => {
-            console.info('>>> %s is printed OK.');
+            // openCashDrawer(printerName).then();
+            console.info('>>> %s is printed OK.', printerName);
         });
     }
+}
+
+
+/// 获得当前日期时间
+function getFormattedCurrentDateTime() {
+    const now = new Date();
+
+    const year = now.getFullYear();
+    const month = (now.getMonth() + 1).toString().padStart(2, '0'); // Months are 0-indexed
+    const day = now.getDate().toString().padStart(2, '0');
+
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const seconds = now.getSeconds().toString().padStart(2, '0');
+
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
 function openLogFile() {
@@ -257,4 +257,11 @@ function openLogFile() {
     return fileName;
 }
 
-module.exports = {getMessage, printReceipt, savePrinters, getCurrentLocation, openLogFile, printTestPage};
+module.exports = {
+    getMessage,
+    printReceipt,
+    savePrinters,
+    getCurrentLocation,
+    openLogFile,
+    printTestPage
+};

@@ -8,12 +8,14 @@ const {screen} = require("electron");
 const electron = require("electron");
 const {autoUpdater} = require('electron-updater');
 const log = require('electron-log'); // 可选，用于日志记录
+const bonjour = require('bonjour')();
+const { commandsToTry } = require('./cashDrawerCommands'); // <--- 新增引入
 
 // 配置 autoUpdater 日志
 autoUpdater.logger = log;
 autoUpdater.logger.transports.file.level = 'info';
 log.info('App starting...')
-
+const net = require('net');
 let win;
 // Create main window
 function createMainWindow(isVisible) {
@@ -99,16 +101,6 @@ function createMainWindow(isVisible) {
         }
         // 如果 choice === 1 ("立即退出")，则不执行 e.preventDefault()，窗口会正常关闭
     });
-
-    // win.on('closed', (e) => {
-    //     log.info('App is quitting. Clearing cache...');
-    //     // 访问默认会话并清除缓存
-    //     electron.session.defaultSession.clearCache().then(() => {
-    //         log.info('Browser cache cleared successfully.');
-    //     }).catch((err) => {
-    //         log.error('Failed to clear browser cache on quit:', err);
-    //     });
-    // });
 
     // 自动更新事件监听
     autoUpdater.on('checking-for-update', () => {
@@ -248,11 +240,24 @@ function createMainWindow(isVisible) {
     });
 
     ipcMain.on('clear-cache', (event) => {
-        log.info('App is quitting. Clearing cache...');
-        electron.session.defaultSession.clearCache().then(() => {
-            log.info('Browser cache cleared successfully.');
+        log.info('App is quitting. Clearing cache (excluding localStorage)...');
+        const options = {
+            storages: [
+                'appcache',
+                'cookies',
+                'filesystem',
+                'indexdb',
+                'shadercache', // 通常与 WebGL 相关
+                'websql',
+                'serviceworkers',
+                'cachestorage' // 用于 Cache API
+            ],
+            // quotas: ['temporary', 'persistent', 'syncable'] // 如果需要，也可以清除配额数据
+        };
+        electron.session.defaultSession.clearStorageData(options).then(() => {
+            log.info('Browser storage (excluding localStorage) cleared successfully.');
         }).catch((err) => {
-            log.error('Failed to clear browser cache on quit:', err);
+            log.error('Failed to clear browser storage on quit:', err);
         });
     });
 
@@ -270,6 +275,17 @@ function createMainWindow(isVisible) {
     ipcMain.on('print-test-page', (event, printName, pageWidth) => {
         if (printName != null && printName.trim().length > 0) {
             printTestPage(printName, pageWidth);
+        }
+    });
+
+    ipcMain.on('open-cash-drawer', (event, printerIp, openDrawerCommand) => {
+        if (printerIp != null && printerIp.trim().length > 0) {
+            openCashDrawer(printerIp, openDrawerCommand).then((isOpened) => {
+                if (!isOpened) {
+                } else {
+                    log.info(`Cash drawer (${printerIp}) is opened successfully called.`);
+                }
+            });
         }
     });
 
@@ -334,6 +350,241 @@ function getSystemPrinters(shopCode) {
 
 function getTitleVersion () {
     return `${config['appTitle']} [ver: m${app.getVersion()}.${config["ver"]}]`;
+}
+
+////////////////////////////////////////////////
+//
+//  通过打印机开钱箱部分
+//
+////////////////////////////////////////////////
+
+/***
+ * 向网络打印机发送原始字节命令。
+ * @param {string} ipAddress 打印机的IP地址。
+ * @param {number} port 打印机的端口号 (通常是 9100)。
+ * @param {Buffer | Uint8Array | number[]} commandBytes 要发送的命令字节。
+ * @returns {Promise<void>}
+ */
+function sendRawCommandToNetworkPrinter(ipAddress, port, commandBytes) {
+    return new Promise((resolve, reject) => {
+        const client = new net.Socket();
+        const connectionTimeout = 5000; // 5秒连接超时
+
+        const timer = setTimeout(() => {
+            client.destroy();
+            reject(new Error(`Connection attempt to ${ipAddress}:${port} timed out after ${connectionTimeout}ms`));
+        }, connectionTimeout);
+
+        client.connect(port, ipAddress, () => {
+            clearTimeout(timer); // 清除连接超时计时器
+            console.log(`Connected to printer at ${ipAddress}:${port}`);
+            try {
+                client.write(Buffer.from(commandBytes)); // 确保是 Buffer 类型
+                client.end(() => {
+                    console.log('Raw command sent and connection closed.');
+                    resolve();
+                });
+            } catch (writeError) {
+                console.error('Error writing to printer:', writeError);
+                client.destroy();
+                reject(writeError);
+            }
+        });
+
+        client.on('error', (err) => {
+            clearTimeout(timer);
+            console.error('Printer connection error:', err.message);
+            client.destroy(); // 确保socket被销毁
+            reject(err);
+        });
+
+        // 可选：处理服务器端关闭连接的情况
+        client.on('close', (hadError) => {
+            clearTimeout(timer);
+            if (hadError) {
+                console.log('Connection closed due to a transmission error.');
+            } else {
+                console.log('Connection closed by the printer.');
+            }
+        });
+    });
+}
+
+/**
+ * 暂时没用
+ * 通过 mDNS/Bonjour 服务发现尝试获取网络打印机的IP地址。
+ * @param {string} targetPrinterName 打印机名称或名称的一部分，用于匹配发现的服务。
+ * @param {number} [timeout=7000] 发现操作的超时时间（毫秒）。
+ * @returns {Promise<string|null>} 如果找到匹配打印机的IPv4地址则返回该地址，否则返回null。
+ */
+async function findPrinterIpByDiscovery(targetPrinterName, timeout = 15000) {
+    return new Promise((resolveFn) => {
+        let resolved = false;
+        const browsers = [];
+        let discoveryTimeoutId = null;
+
+        // 包装 resolve 以确保清理
+        const resolve = (value) => {
+            if (discoveryTimeoutId) {
+                clearTimeout(discoveryTimeoutId);
+                discoveryTimeoutId = null;
+            }
+            if (!resolved) {
+                resolved = true;
+                stopDiscovery();
+                resolveFn(value);
+            }
+        };
+
+        const stopDiscovery = () => {
+            browsers.forEach(browser => {
+                try {
+                    browser.stop();
+                } catch (e) {
+                    log.warn(`[MDNS] Error stopping a browser: ${e.message}`);
+                }
+            });
+            browsers.length = 0; // 清空数组
+            try {
+                // bonjour 实例通常在应用退出时或不再需要时销毁
+                // 如果频繁调用此函数，可以考虑在更高层级管理 bonjour 实例的生命周期
+                // bonjour.destroy(); // 暂时注释掉，避免影响后续可能的调用
+            } catch (e) {
+                log.warn(`[MDNS] Error destroying bonjour instance: ${e.message}`);
+            }
+        };
+
+        const handleFoundService = (service) => {
+            if (resolved) return;
+
+            log.info(`[MDNS] Found service: Name: ${service.name}, Type: ${service.type}, Host: ${service.host}, Addresses: ${service.addresses}, Port: ${service.port}`);
+
+            const serviceNameLower = service.name ? service.name.toLowerCase() : '';
+            const targetNameLower = targetPrinterName ? targetPrinterName.toLowerCase() : '';
+
+            // 尝试匹配打印机名称 (这里使用简单的包含匹配，您可能需要更复杂的逻辑)
+            if (serviceNameLower.includes(targetNameLower)) {
+                if (service.addresses && service.addresses.length > 0) {
+                    // 优先寻找 IPv4 地址
+                    const ipv4Address = service.addresses.find(addr => net.isIPv4(addr));
+                    if (ipv4Address) {
+                        log.info(`[MDNS] Matched printer "${targetPrinterName}" with service "${service.name}". IP: ${ipv4Address}`);
+                        resolve(ipv4Address);
+                        return;
+                    }
+                    log.info(`[MDNS] Service "${service.name}" matched for "${targetPrinterName}" but no IPv4 address found in ${JSON.stringify(service.addresses)}.`);
+                }
+            }
+        };
+
+        // 常见的打印机服务类型
+        const serviceTypes = ['ipp', 'pdl-datastream', 'printer']; // 'printer' 通常是 LPD
+
+        serviceTypes.forEach(type => {
+            try {
+                const browser = bonjour.find({ type });
+                browsers.push(browser);
+                browser.on('up', handleFoundService); // 当服务上线或被发现时触发
+                browser.on('error', (err) => {
+                    log.error(`[MDNS] Browser error for type "${type}":`, err);
+                });
+            } catch (e) {
+                log.error(`[MDNS] Failed to create mDNS browser for type "${type}": ${e.message}`);
+            }
+        });
+
+        if (browsers.length === 0) {
+            log.error("[MDNS] No mDNS browsers could be started. Bonjour might not be initialized correctly or no suitable network interfaces available.");
+            resolve(null); // 如果没有浏览器启动，则无法发现
+            return;
+        }
+
+        log.info(`[MDNS] Started discovery for services: ${serviceTypes.join(', ')} matching name part: "${targetPrinterName}". Timeout: ${timeout}ms`);
+
+        discoveryTimeoutId = setTimeout(() => {
+            if (!resolved) {
+                log.warn(`[MDNS] Discovery for "${targetPrinterName}" timed out after ${timeout}ms.`);
+                resolve(null); // 超时，未找到
+            }
+        }, timeout);
+    });
+}
+
+/**
+ * 暂时没用
+ * 尝试根据打印机名称获取其IP地址 (使用Electron内置API)。
+ * @param {import('electron').WebContents} webContents - 发起请求的webContents实例。
+ * @param {string} targetPrinterName 目标打印机的名称。
+ * @returns {Promise<string|null>} 打印机的IP地址，如果找到则返回字符串，否则返回null。
+ */
+async function getPrinterIpByName(webContents, targetPrinterName) {
+    if (!webContents) {
+        log.error('getPrinterIpByName: webContents is required.');
+        console.error('getPrinterIpByName: webContents is required.');
+        return null;
+    }
+    if (!targetPrinterName || targetPrinterName.trim() === '') {
+        log.error('getPrinterIpByName: Printer name is required.');
+        console.error('getPrinterIpByName: Printer name is required.');
+        return null;
+    }
+
+    try {
+        const printers = await webContents.getPrintersAsync();
+        const targetPrinter = printers.find(p => p.name === targetPrinterName || p.deviceId === targetPrinterName);
+
+        if (targetPrinter) {
+            log.info(`Found printer details for "${targetPrinterName}": ${JSON.stringify(targetPrinter)}`);
+
+            // device-uri 示例: "socket://192.168.1.123:9100", "ipp://hostname/ipp/print"
+            const deviceURI = targetPrinter.options?.['device-uri'];
+
+            if (deviceURI && typeof deviceURI === 'string') {
+                // 正则表达式尝试从常见的网络打印机URI格式中提取IP地址
+                // 支持 socket://, ipp://, http://, https:// 等协议头
+                const ipRegex = /(?:[a-zA-Z]+:\/\/)?([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})/;
+                const match = deviceURI.match(ipRegex);
+
+                if (match && match[1]) {
+                    log.info(`Extracted IP "${match[1]}" from URI "${deviceURI}" for printer "${targetPrinterName}"`);
+                    return match[1];
+                } else {
+                    // 检查 deviceURI 本身是否就是一个 IP 地址 (不常见，但可能)
+                    const directIpRegex = /^([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})$/;
+                    if (directIpRegex.test(deviceURI)) {
+                        log.info(`Device URI "${deviceURI}" appears to be a direct IP for printer "${targetPrinterName}"`);
+                        return deviceURI;
+                    }
+                    log.warn(`Could not parse a valid IP address from device-uri: "${deviceURI}" for printer "${targetPrinterName}". It might be a hostname, USB/serial port, or an unrecognized format.`);
+                }
+            } else {
+                log.warn(`No 'device-uri' found in options for printer "${targetPrinterName}".`);
+            }
+        } else {
+            log.warn(`Printer with name or deviceId "${targetPrinterName}" not found.`);
+        }
+    } catch (error) {
+        log.error(`Error in getPrinterIpByName for "${targetPrinterName}":`, error);
+        console.error(`Error in getPrinterIpByName for "${targetPrinterName}":`, error);
+    }
+    return null; // IP not found or an error occurred
+}
+
+async function openCashDrawer(printerIp, openDrawerCommandKey) {
+    const printerPort = 9100;
+    if (!printerIp || !openDrawerCommandKey) {
+        log.error(`Could not determine IP for printer "${printerIp}". Cannot open cash drawer.`);
+        return false; // 表示未能执行打开操作
+    }
+    const openDrawerCommand = commandsToTry.get(openDrawerCommandKey);
+
+    if (!openDrawerCommand) {
+        log.error(`Unknown cash drawer command key: '${openDrawerCommandKey}'. Cannot open cash drawer.`);
+        return false; // 表示命令键无效
+    }
+
+    await sendRawCommandToNetworkPrinter(printerIp, printerPort, openDrawerCommand);
+    log.info(`Successfully sent command '${printerIp}'`);
 }
 
 module.exports = {createMainWindow};

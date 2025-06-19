@@ -20,6 +20,10 @@ contextBridge.exposeInMainWorld('printTestPage', (data, width) => {
     ipcRenderer.send('print-test-page', data, width);
 });
 
+contextBridge.exposeInMainWorld('openCashDrawer', (printerIp, openDrawerCommand) => {
+    ipcRenderer.send('open-cash-drawer', printerIp, openDrawerCommand);
+});
+
 contextBridge.exposeInMainWorld('clearCache', () => {
     ipcRenderer.send('clear-cache');
 });
