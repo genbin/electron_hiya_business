@@ -265,7 +265,7 @@ function createMainWindow(isVisible) {
     });
 
     // 仅当应用已打包或强制了开发更新配置时才检查更新
-    if (app.isPackaged || process.env.UPDATE_DEV || autoUpdater.forceDevUpdateConfig === true) {
+    if (app.isPackaged || process.env.UPDATE_DEV === 'true' || autoUpdater.forceDevUpdateConfig === true) {
         autoUpdater.checkForUpdatesAndNotify().then(r => {
             log.info('checkForUpdatesAndNotify called.');
         }).catch(err => {
