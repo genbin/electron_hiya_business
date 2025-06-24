@@ -46,6 +46,7 @@
     },
     "nsis": {
       "oneClick": false,
+      "artifactName": "${productName}-Setup-${version}.${ext}",
       "allowToChangeInstallationDirectory": true,
       "installerIcon": "build/installer.ico",
       "uninstallerIcon": "build/uninstall.ico",
