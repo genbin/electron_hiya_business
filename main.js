@@ -33,9 +33,8 @@ function createAndLoadWindows() {
         height: 800,
         show: false, // 关键：初始不显示
         webPreferences: {
-            // 根据您的需求配置，例如:
-            // nodeIntegration: true, // 如果第三方页面或您的脚本需要
-            // contextIsolation: true,
+            nodeIntegration: true, // 如果第三方页面或您的脚本需要
+            contextIsolation: true,
             // preload: path.join(__dirname, 'preload.js')
         }
     });
@@ -44,6 +43,19 @@ function createAndLoadWindows() {
     mainWindow = createMainWindow(false);
 
     // 3. 监听主窗口内容加载完成事件
+    // mainWindow.once('ready-to-show', () => {
+    //     mainWindow.show();
+    // });
+    //
+    // mainWindow.webContents.on('dom-ready', () => {
+    //     if (loadingWindow) {
+    //         loadingWindow.close();
+    //     }
+    //     if (mainWindow) {
+    //         mainWindow.show();
+    //     }
+    // });
+
     mainWindow.webContents.on('did-finish-load', () => {
         // 4. 当第三方页面加载完成后，关闭加载窗口并显示主窗口
         if (loadingWindow) {
@@ -87,7 +99,7 @@ app.whenReady().then(() => {
         [`${serverUrl}assets/assets/fonts/PingFangSC-Regular.otf`]: 'assets/fonts/PingFangSC-Regular.otf',
         [`${serverUrl}assets/assets/fonts/PingFangSC-Medium.otf`]: 'assets/fonts/PingFangSC-Medium.otf',
         [`${serverUrl}assets/assets/fonts/NotoSansSC-Regular.ttf`]: 'assets/fonts/NotoSansSC-Regular.ttf',
-        [`${serverUrl}assets/fonts/MaterialIcons-Regular.otf`]: 'MaterialIcons-Regular.otf',
+        // [`${serverUrl}assets/fonts/MaterialIcons-Regular.otf`]: 'assets/fonts/MaterialIcons-Regular.otf',
         [`${serverUrl}assets/packages/cupertino_icons/assets/CupertinoIcons.ttf`]: 'assets/fonts/CupertinoIcons.ttf',
         [`${serverUrl}favicon.png`]: 'assets/images/favicon.png',
     };

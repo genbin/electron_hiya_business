@@ -36,49 +36,24 @@ function createMainWindow(isVisible) {
             allowRunningInsecureContent: true,
             nodeIntegration: false, // Do not enable Node.js integration
             contextIsolation: true, // 启用隔离
-            devTools: true,
+            devTools: false,
             webSecurity: true, //禁用同源策略
-            // plugins: true, //是否支持插件
             nativeWindowOpen: true, //是否使用原生的window.open()
-            // webviewTag: true, //是否启用 <webview> tag标签
             sandbox: false,
             preload: path.join(__dirname, '../preload.js')
         }
     });
 
-    if (config['hasCache']) {
-        let serverUrl = config['serverAddress'];
-        if (config['isTest']) {
-            serverUrl = config['testAddress'];
-        }
-        win.loadURL(serverUrl).then(r => {
-            _debug();
-
-        }).catch((err) => {
-            console.log(err);
-        });
-    } else {
-        win.webContents.session.clearCache().then(() => {
-            let serverUrl = config['serverAddress'];
-            if (config['isTest']) {
-                serverUrl = config['testAddress'];
-            }
-            win.loadURL(serverUrl).then(r => {
-                _debug();
-
-            }).catch((err) => {
-                console.log(err);
-                electron.dialog.showMessageBoxSync(win, {
-                    type: 'info',
-                    title: '提示',
-                    detail: err,
-                    buttons: ['OK'],
-                    defaultId: 0,
-                    cancelId: 0
-                });
-            });
-        });
+    let serverUrl = config['serverAddress'];
+    if (config['isTest']) {
+        serverUrl = config['testAddress'];
     }
+    win.loadURL(serverUrl).then(r => {
+        _debug();
+
+    }).catch((err) => {
+        console.log(err);
+    });
 
     win.on('show', () => {
     })
